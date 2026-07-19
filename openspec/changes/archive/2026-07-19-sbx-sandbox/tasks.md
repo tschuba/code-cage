@@ -24,4 +24,4 @@
 
 - [x] 5.1 Run `cage claude` from a test project and confirm Claude starts with skills and plugins available (check ponytail, context7)
 - [x] 5.2 Confirm `~/.ssh` and `~/.aws` are not accessible from inside the sandbox
-- [ ] 5.3 Confirm `cage pi` launches pi in a sandboxed shell
+- [x] 5.3 Confirm `cage pi` launches pi in a sandboxed shell
