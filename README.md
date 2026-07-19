@@ -38,7 +38,6 @@ git clone https://github.com/tschuba/code-cage
 ln -s /path/to/code-cage/cage /usr/local/bin/cage
 ```
 
-**Note:** `claude-kit/spec.yaml` contains a hardcoded path (`/Users/thomas/.claude/`). Edit it to match your home directory before use.
 
 ## Usage
 
