@@ -1,0 +1,15 @@
+#!/bin/sh
+set -e
+SCRIPT="$(readlink "$0" || echo "$0")"
+CAGE_DIR="$(cd "$(dirname "$SCRIPT")" && pwd)"
+AGENT="${1:-claude}"
+shift 2>/dev/null || true
+KIT="$CAGE_DIR/${AGENT}-kit"
+KIT_KIND="$(grep '^kind:' "$KIT/spec.yaml" 2>/dev/null | awk '{print $2}')"
+NAME="${AGENT}-$(basename "$(pwd)")"
+sbx rm -f "$NAME" 2>/dev/null || true
+if [ "$KIT_KIND" = "agent" ]; then
+  exec sbx run "$AGENT" --kit "$KIT" --name "$NAME" . "$HOME/.claude:ro" -- "$@"
+else
+  exec sbx run "$AGENT" --kit "$KIT" --name "$NAME" . "$HOME/.claude:ro" -- --dangerously-skip-permissions "$@"
+fi

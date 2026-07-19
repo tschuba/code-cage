@@ -1,0 +1,10 @@
+schemaVersion: "1"
+kind: mixin
+name: claude-kit
+description: Links skills, plugins, rules and CLAUDE.md from host into agent home
+
+commands:
+  install:
+    - command: "for d in skills plugins rules memory; do test -d /Users/thomas/.claude/$d && ln -sfn /Users/thomas/.claude/$d /home/agent/.claude/$d || true; done; ln -sf /Users/thomas/.claude/CLAUDE.md /home/agent/.claude/CLAUDE.md || true"
+      user: "0"
+      description: "Symlink host skills, plugins, rules, CLAUDE.md into agent .claude"
