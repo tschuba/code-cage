@@ -23,20 +23,18 @@ cage pi       # pi coding agent, isolated
 - macOS / Apple Silicon
 - [`sbx`](https://github.com/docker/sbx) CLI (no Docker Desktop required)
 - A free Docker account
+- [`pngpaste`](https://github.com/jcsalterego/pngpaste) for clipboard image sync (`brew install pngpaste`)
 
 ## Install
 
 ```sh
 brew install docker/tap/sbx
 sbx login
-```
-
-Clone this repo and symlink `cage` onto your PATH:
-
-```sh
 git clone https://github.com/tschuba/code-cage
-ln -s /path/to/code-cage/cage /usr/local/bin/cage
+cd code-cage && ./install
 ```
+
+`./install` links `cage` and `cage-clipd` onto your PATH, installs `pngpaste`, and prints the WezTerm snippet for clipboard image paste if not yet configured.
 
 
 ## Usage

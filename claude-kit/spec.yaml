@@ -8,3 +8,6 @@ commands:
     - command: "SRC=$(ls -d /Users/*/.claude 2>/dev/null | head -1); for d in skills plugins rules memory; do test -d \"$SRC/$d\" && ln -sfn \"$SRC/$d\" /home/agent/.claude/$d || true; done; ln -sf \"$SRC/CLAUDE.md\" /home/agent/.claude/CLAUDE.md || true"
       user: "0"
       description: "Symlink host skills, plugins, rules, CLAUDE.md into agent .claude"
+    - command: "SRC=$(ls -d /Users/*/.cage-clipboard 2>/dev/null | head -1); test -d \"$SRC\" && ln -sfn \"$SRC\" /home/agent/.cage-clipboard || true"
+      user: "0"
+      description: "Symlink host clipboard dir so ~/.cage-clipboard/latest.png is reachable"
