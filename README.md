@@ -23,20 +23,18 @@ cage pi       # pi coding agent, isolated
 - macOS / Apple Silicon
 - [`sbx`](https://github.com/docker/sbx) CLI (no Docker Desktop required)
 - A free Docker account
+- [`pngpaste`](https://github.com/jcsalterego/pngpaste) for clipboard image sync (`brew install pngpaste`)
 
 ## Install
 
 ```sh
 brew install docker/tap/sbx
 sbx login
-```
-
-Clone this repo and symlink `cage` onto your PATH:
-
-```sh
 git clone https://github.com/tschuba/code-cage
-ln -s /path/to/code-cage/cage /usr/local/bin/cage
+cd code-cage && ./install
 ```
+
+`./install` links `cage` and `cage-clipd` onto your PATH, installs `pngpaste`, and prints the WezTerm snippet for clipboard image paste if not yet configured.
 
 
 ## Usage
@@ -50,6 +48,10 @@ cage claude --help   # pass args through to the agent
 ```
 
 Each directory gets its own sandbox (`claude-<dirname>`). Starting a new session always wipes the previous one — sandboxes are ephemeral by design.
+
+### Pasting screenshots
+
+Copy a screenshot (`Cmd+Ctrl+Shift+4`), then press **Ctrl+Shift+V** in the prompt to insert the image path. `cage-clipd` runs in the background and keeps `~/.cage/clipboard/latest.png` in sync with the clipboard — the file exists only when the clipboard currently holds an image.
 
 ## Adding agents
 
