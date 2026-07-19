@@ -49,6 +49,10 @@ cage claude --help   # pass args through to the agent
 
 Each directory gets its own sandbox (`claude-<dirname>`). Starting a new session always wipes the previous one — sandboxes are ephemeral by design.
 
+### Pasting screenshots
+
+Copy a screenshot (`Cmd+Ctrl+Shift+4`), then press **Ctrl+Shift+V** in the prompt to insert the image path. `cage-clipd` runs in the background and keeps `~/.cage-clipboard/latest.png` in sync with the clipboard — the file exists only when the clipboard currently holds an image.
+
 ## Adding agents
 
 Create `<agent>-kit/spec.yaml` in this repo. Use `kind: mixin` to extend a built-in agent (like `claude`), or `kind: agent` for a fully custom one (like `pi`). See `claude-kit/` and `pi-kit/` for examples.
