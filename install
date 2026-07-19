@@ -2,23 +2,11 @@
 set -e
 CAGE_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-# pngpaste
-if ! command -v pngpaste >/dev/null 2>&1; then
-    echo "Installing pngpaste..."
-    brew install pngpaste
-else
-    echo "pngpaste already installed"
-fi
+brew install pngpaste
 
-# symlinks
 for bin in cage cage-clipd; do
-    target="/usr/local/bin/$bin"
-    if [ -L "$target" ] && [ "$(readlink "$target")" = "$CAGE_DIR/$bin" ]; then
-        echo "$bin already linked"
-    else
-        ln -sf "$CAGE_DIR/$bin" "$target"
-        echo "Linked $bin → $target"
-    fi
+    ln -sf "$CAGE_DIR/$bin" "/usr/local/bin/$bin"
+    echo "Linked $bin"
 done
 
 # WezTerm reminder

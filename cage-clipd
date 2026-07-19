@@ -13,7 +13,7 @@ fi
 
 prev_hash=""
 while true; do
-    hash=$(osascript -e 'clipboard info' 2>/dev/null | md5 || echo "")
+    hash=$(osascript -e 'clipboard info' 2>/dev/null | md5)
     if [ "$hash" != "$prev_hash" ]; then
         prev_hash="$hash"
         pngpaste "$OUTDIR/latest.png" 2>/dev/null || rm -f "$OUTDIR/latest.png"
