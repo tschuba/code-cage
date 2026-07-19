@@ -3,6 +3,14 @@ kind: mixin
 name: claude-kit
 description: Links skills, plugins, rules and CLAUDE.md from host into agent home
 
+network:
+  allowedDomains:
+    - github.com
+    - api.github.com
+    - objects.githubusercontent.com
+    - codeload.github.com
+    - raw.githubusercontent.com
+
 commands:
   install:
     - command: "SRC=$(ls -d /Users/*/.claude 2>/dev/null | head -1); for d in skills plugins rules memory; do test -d \"$SRC/$d\" && ln -sfn \"$SRC/$d\" /home/agent/.claude/$d || true; done; ln -sf \"$SRC/CLAUDE.md\" /home/agent/.claude/CLAUDE.md || true"
@@ -11,3 +19,6 @@ commands:
     - command: "SRC=$(ls -d /Users/*/.cage/clipboard 2>/dev/null | head -1); test -d \"$SRC\" && mkdir -p /home/agent/.cage && ln -sfn \"$SRC\" /home/agent/.cage/clipboard || true"
       user: "0"
       description: "Symlink host clipboard dir so ~/.cage/clipboard/latest.png is reachable"
+    - command: "git config --global credential.helper '!f() { echo username=x-access-token; echo password=$GH_TOKEN; }; f'"
+      user: "1000"
+      description: "Configure git HTTPS credential helper to use GH_TOKEN"
