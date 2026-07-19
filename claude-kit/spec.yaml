@@ -5,6 +5,6 @@ description: Links skills, plugins, rules and CLAUDE.md from host into agent hom
 
 commands:
   install:
-    - command: "for d in skills plugins rules memory; do test -d /Users/thomas/.claude/$d && ln -sfn /Users/thomas/.claude/$d /home/agent/.claude/$d || true; done; ln -sf /Users/thomas/.claude/CLAUDE.md /home/agent/.claude/CLAUDE.md || true"
+    - command: "SRC=$(ls -d /Users/*/.claude 2>/dev/null | head -1); for d in skills plugins rules memory; do test -d \"$SRC/$d\" && ln -sfn \"$SRC/$d\" /home/agent/.claude/$d || true; done; ln -sf \"$SRC/CLAUDE.md\" /home/agent/.claude/CLAUDE.md || true"
       user: "0"
       description: "Symlink host skills, plugins, rules, CLAUDE.md into agent .claude"
