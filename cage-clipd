@@ -1,9 +1,9 @@
 #!/bin/sh
-# cage-clipd — sync clipboard images to ~/.cage-clipboard/latest.png
+# cage-clipd — sync clipboard images to ~/.cage/clipboard/latest.png
 # Requires: brew install pngpaste
 set -e
 
-OUTDIR="$HOME/.cage-clipboard"
+OUTDIR="$HOME/.cage/clipboard"
 mkdir -p "$OUTDIR"
 
 if ! command -v pngpaste >/dev/null 2>&1; then

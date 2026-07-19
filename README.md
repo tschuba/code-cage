@@ -51,7 +51,7 @@ Each directory gets its own sandbox (`claude-<dirname>`). Starting a new session
 
 ### Pasting screenshots
 
-Copy a screenshot (`Cmd+Ctrl+Shift+4`), then press **Ctrl+Shift+V** in the prompt to insert the image path. `cage-clipd` runs in the background and keeps `~/.cage-clipboard/latest.png` in sync with the clipboard — the file exists only when the clipboard currently holds an image.
+Copy a screenshot (`Cmd+Ctrl+Shift+4`), then press **Ctrl+Shift+V** in the prompt to insert the image path. `cage-clipd` runs in the background and keeps `~/.cage/clipboard/latest.png` in sync with the clipboard — the file exists only when the clipboard currently holds an image.
 
 ## Adding agents
 

@@ -10,13 +10,13 @@ NAME="${AGENT}-$(basename "$(pwd)")"
 
 # Start clipboard daemon if not already running
 if ! pgrep -qf cage-clipd 2>/dev/null; then
-    mkdir -p "$HOME/.cage-clipboard"
+    mkdir -p "$HOME/.cage/clipboard"
     "$CAGE_DIR/cage-clipd" >/dev/null 2>&1 &
 fi
 
 sbx rm -f "$NAME" 2>/dev/null || true
 if [ "$KIT_KIND" = "agent" ]; then
-  exec sbx run "$AGENT" --kit "$KIT" --name "$NAME" . "$HOME/.claude:ro" "$HOME/.cage-clipboard:ro" -- "$@"
+  exec sbx run "$AGENT" --kit "$KIT" --name "$NAME" . "$HOME/.claude:ro" "$HOME/.cage/clipboard:ro" -- "$@"
 else
-  exec sbx run "$AGENT" --kit "$KIT" --name "$NAME" . "$HOME/.claude:ro" "$HOME/.cage-clipboard:ro" -- --dangerously-skip-permissions "$@"
+  exec sbx run "$AGENT" --kit "$KIT" --name "$NAME" . "$HOME/.claude:ro" "$HOME/.cage/clipboard:ro" -- --dangerously-skip-permissions "$@"
 fi

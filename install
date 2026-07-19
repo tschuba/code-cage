@@ -10,7 +10,7 @@ for bin in cage cage-clipd; do
 done
 
 # WezTerm reminder
-if ! grep -q 'cage-clipboard' "$HOME/.wezterm.lua" 2>/dev/null; then
+if ! grep -q 'cage/clipboard' "$HOME/.wezterm.lua" 2>/dev/null; then
     cat <<'MSG'
 
 WezTerm config not yet updated. Add this to the config.keys table in ~/.wezterm.lua:
@@ -18,7 +18,7 @@ WezTerm config not yet updated. Add this to the config.keys table in ~/.wezterm.
   {
     key = 'v',
     mods = 'CTRL|SHIFT',
-    action = wezterm.action.SendString(os.getenv('HOME') .. '/.cage-clipboard/latest.png'),
+    action = wezterm.action.SendString(os.getenv('HOME') .. '/.cage/clipboard/latest.png'),
   },
 
 Ctrl+Shift+V then inserts the clipboard image path into the prompt.
