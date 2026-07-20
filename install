@@ -4,6 +4,15 @@ CAGE_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 brew install pngpaste
 
+# Store GitHub token in sbx secret store so agents can push, create PRs, etc.
+if gh auth token >/dev/null 2>&1; then
+    echo "Importing GitHub token into sbx secrets..."
+    gh auth token | sbx secret set -g github 2>/dev/null || \
+        echo "  (skipped: sbx not yet authenticated — run 'sbx login' first)"
+else
+    echo "Note: 'gh' not authenticated — run 'gh auth login' then 'sbx secret import github' to enable git/GitHub in cage sessions"
+fi
+
 for bin in cage cage-clipd; do
     ln -sf "$CAGE_DIR/$bin" "/usr/local/bin/$bin"
     echo "Linked $bin"

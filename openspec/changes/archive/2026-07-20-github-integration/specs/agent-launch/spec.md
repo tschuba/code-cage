@@ -1,4 +1,4 @@
-## ADDED Requirements
+## MODIFIED Requirements
 
 ### Requirement: Claude Code can be launched inside the sandbox via kit
 The system SHALL provide a `cage claude` entry point that applies the `claude-kit` and starts Claude Code with `--dangerously-skip-permissions`. When the host has a GitHub token stored in the sbx secret store, the agent SHALL have full git and GitHub API access.
@@ -18,4 +18,3 @@ The system SHALL provide a `cage claude` entry point that applies the `claude-ki
 #### Scenario: Launch succeeds without GitHub secret
 - **WHEN** no GitHub token is stored in the sbx secret store
 - **THEN** cage launches the sandbox normally; `GH_TOKEN` is not set; git remote and `gh` CLI operations fail with clear authentication errors, but local git works normally
-
