@@ -16,9 +16,9 @@ The system SHALL use an sbx Kit (`spec.yaml`) as the single source of truth for 
 - **THEN** MCP servers (e.g., context7) are available to the agent via the kit's `static-mcp` configuration, without requiring a separate MCP server process on the host
 
 #### Scenario: Kit allows outbound HTTPS to GitHub
-- **WHEN** the sandbox starts with the kit applied and `GH_TOKEN` is set on the host
+- **WHEN** the sandbox starts with the kit applied
 - **THEN** outbound HTTPS traffic to `github.com`, `api.github.com`, `objects.githubusercontent.com`, `codeload.github.com`, and `raw.githubusercontent.com` is permitted
 
-#### Scenario: Kit forwards GitHub token as sandbox env var
-- **WHEN** `GH_TOKEN` is present in the host environment at launch time
-- **THEN** it is available as the `GH_TOKEN` environment variable inside the sandbox, and the outbound proxy injects `Authorization: Bearer <token>` for requests to GitHub service domains
+#### Scenario: GitHub token available via sbx secret mechanism
+- **WHEN** a GitHub token has been stored with `sbx secret set -g github` on the host
+- **THEN** sbx sets `GH_TOKEN` inside the sandbox (via the proxy-managed secret mechanism), and the outbound proxy authenticates GitHub API and git HTTPS requests using the stored token — the raw token is never directly accessible inside the sandbox
