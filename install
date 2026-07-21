@@ -2,7 +2,10 @@
 set -e
 CAGE_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-brew install pngpaste
+if ! python3 -c '' 2>/dev/null; then
+    echo "cage-clipd requires Python 3 (ships with macOS 12+). Please install it." >&2
+    exit 1
+fi
 
 # Store GitHub token in sbx secret store so agents can push, create PRs, etc.
 if gh auth token >/dev/null 2>&1; then
@@ -27,10 +30,17 @@ WezTerm config not yet updated. Add this to the config.keys table in ~/.wezterm.
   {
     key = 'v',
     mods = 'CTRL|SHIFT',
-    action = wezterm.action.SendString(os.getenv('HOME') .. '/.cage/clipboard/latest.png'),
+    action = wezterm.action_callback(function(window, pane)
+      local f = io.open(os.getenv('HOME') .. '/.cage/clipboard/.current', 'r')
+      if f then
+        local text = f:read('*a'):gsub('\n$', '')
+        f:close()
+        pane:send_text(text)
+      end
+    end),
   },
 
-Ctrl+Shift+V then inserts the clipboard image path into the prompt.
+Ctrl+Shift+V then inserts the clipboard path(s) from ~/.cage/clipboard/.current into the prompt.
 
 MSG
 else

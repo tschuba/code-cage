@@ -1,22 +1,117 @@
-#!/bin/sh
-# cage-clipd — sync clipboard images to ~/.cage/clipboard/latest.png
-# Requires: brew install pngpaste
-set -e
+#!/usr/bin/env python3
+# cage-clipd — sync clipboard content (images, PDFs, Finder files) to ~/.cage/clipboard/
+import os
+import sys
+import glob
+import shutil
+import time
 
-OUTDIR="$HOME/.cage/clipboard"
-mkdir -p "$OUTDIR"
+try:
+    from AppKit import NSPasteboard, NSBitmapImageRep
+    try:
+        from AppKit import NSBitmapImageFileTypePNG as PNG_TYPE
+    except ImportError:
+        PNG_TYPE = 4  # ponytail: legacy alias; value is stable across macOS versions
+except ImportError:
+    print("cage-clipd: PyObjC not available — run with macOS system Python", file=sys.stderr)
+    sys.exit(1)
 
-if ! command -v pngpaste >/dev/null 2>&1; then
-    echo "cage-clipd: pngpaste not found. Run: brew install pngpaste" >&2
-    exit 1
-fi
+OUTDIR = os.path.expanduser("~/.cage/clipboard")
+os.makedirs(OUTDIR, exist_ok=True)
 
-prev_hash=""
-while true; do
-    hash=$(osascript -e 'clipboard info' 2>/dev/null | md5)
-    if [ "$hash" != "$prev_hash" ]; then
-        prev_hash="$hash"
-        pngpaste "$OUTDIR/latest.png" 2>/dev/null || rm -f "$OUTDIR/latest.png"
-    fi
-    sleep 0.3
-done
+
+def clean_outdir():
+    for f in glob.glob(os.path.join(OUTDIR, "latest.*")):
+        os.remove(f)
+    for entry in os.scandir(OUTDIR):
+        if entry.name.startswith("."):
+            continue
+        if entry.is_dir(follow_symlinks=False):
+            shutil.rmtree(entry.path)
+        else:
+            os.remove(entry.path)
+
+
+def write_current(paths):
+    with open(os.path.join(OUTDIR, ".current"), "w") as f:
+        f.write("\n".join(paths) + "\n")
+
+
+def handle_pdf(pb):
+    data = pb.dataForType_("com.adobe.pdf")
+    if not data:
+        return False
+    out = os.path.join(OUTDIR, "latest.pdf")
+    clean_outdir()
+    with open(out, "wb") as f:
+        f.write(bytes(data))
+    write_current([out])
+    return True
+
+
+def handle_files(pb):
+    files = pb.propertyListForType_("NSFilenamesPboardType")
+    if not files:
+        return False
+    clean_outdir()
+    paths = list(files)
+
+    # Folder consolidation: N files are the sole contents of their parent dir
+    if len(paths) > 1:
+        parents = set(os.path.dirname(p) for p in paths)
+        if len(parents) == 1:
+            parent = next(iter(parents))
+            try:
+                basenames = {os.path.basename(p) for p in paths}
+                if set(os.listdir(parent)) == basenames:
+                    dest_dir = os.path.join(OUTDIR, os.path.basename(parent))
+                    os.makedirs(dest_dir, exist_ok=True)
+                    for p in paths:
+                        shutil.copy2(p, os.path.join(dest_dir, os.path.basename(p)))
+                    write_current([dest_dir + "/"])
+                    return True
+            except OSError:
+                pass
+
+    dest_paths = []
+    for p in paths:
+        dest = os.path.join(OUTDIR, os.path.basename(p))
+        if os.path.isdir(p):
+            shutil.copytree(p, dest, dirs_exist_ok=True)
+        else:
+            shutil.copy2(p, dest)
+        dest_paths.append(dest)
+    write_current(dest_paths)
+    return True
+
+
+def handle_image(pb):
+    data = pb.dataForType_("public.tiff") or pb.dataForType_("public.png")
+    if not data:
+        return False
+    rep = NSBitmapImageRep.imageRepWithData_(data)
+    if not rep:
+        return False
+    png_data = rep.representationUsingType_properties_(PNG_TYPE, None)
+    if not png_data:
+        return False
+    out = os.path.join(OUTDIR, "latest.png")
+    clean_outdir()
+    png_data.writeToFile_atomically_(out, True)
+    write_current([out])
+    return True
+
+
+def main():
+    pb = NSPasteboard.generalPasteboard()
+    last_count = pb.changeCount()
+    while True:
+        count = pb.changeCount()
+        if count != last_count:
+            last_count = count
+            handle_pdf(pb) or handle_files(pb) or handle_image(pb)
+        time.sleep(0.3)
+
+
+if __name__ == "__main__":
+    main()
