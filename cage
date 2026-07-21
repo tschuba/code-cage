@@ -6,7 +6,7 @@ AGENT="${1:-claude}"
 shift 2>/dev/null || true
 KIT="$CAGE_DIR/${AGENT}-kit"
 KIT_KIND="$(grep '^kind:' "$KIT/spec.yaml" 2>/dev/null | awk '{print $2}')"
-NAME="${AGENT}-$(basename "$(pwd)")"
+NAME="${AGENT}-$(basename "$(pwd)" | tr -cs 'a-zA-Z0-9.' '-' | sed 's/-$//')"
 
 # Start clipboard daemon if not already running
 if ! pgrep -qf cage-clipd 2>/dev/null; then
