@@ -23,7 +23,7 @@ cage pi       # pi coding agent, isolated
 - macOS / Apple Silicon
 - [`sbx`](https://github.com/docker/sbx) CLI (no Docker Desktop required)
 - A free Docker account
-- [`pngpaste`](https://github.com/jcsalterego/pngpaste) for clipboard image sync (`brew install pngpaste`)
+- Python 3 (ships with macOS 12+)
 
 ## Install
 
@@ -34,7 +34,7 @@ git clone https://github.com/tschuba/code-cage
 cd code-cage && ./install
 ```
 
-`./install` links `cage` and `cage-clipd` onto your PATH, installs `pngpaste`, and prints the WezTerm snippet for clipboard image paste if not yet configured.
+`./install` links `cage` and `cage-clipd` onto your PATH and prints the WezTerm snippet for clipboard paste if not yet configured.
 
 
 ## Usage
@@ -49,9 +49,32 @@ cage claude --help   # pass args through to the agent
 
 Each directory gets its own sandbox (`claude-<dirname>`). Starting a new session always wipes the previous one — sandboxes are ephemeral by design.
 
-### Pasting screenshots
+### Pasting clipboard content
 
-Copy a screenshot (`Cmd+Ctrl+Shift+4`), then press **Ctrl+Shift+V** in the prompt to insert the image path. `cage-clipd` runs in the background and keeps `~/.cage/clipboard/latest.png` in sync with the clipboard — the file exists only when the clipboard currently holds an image.
+`cage-clipd` runs in the background and syncs whatever is on the macOS clipboard into `~/.cage/clipboard/`. Press **Ctrl+Shift+V** in the prompt to insert the path(s) at the cursor.
+
+| Clipboard content | What gets written |
+|---|---|
+| Screenshot / image | `~/.cage/clipboard/latest.png` |
+| PDF (from Preview or browser) | `~/.cage/clipboard/latest.pdf` |
+| File(s) from Finder | Copied to `~/.cage/clipboard/`; if files are the only contents of their parent folder, placed in a named subdirectory |
+
+The `Ctrl+Shift+V` macro reads `~/.cage/clipboard/.current`, which always contains the path(s) for the most recent clipboard event. Configure it in `~/.wezterm.lua`:
+
+```lua
+{
+  key = 'v',
+  mods = 'CTRL|SHIFT',
+  action = wezterm.action_callback(function(window, pane)
+    local f = io.open(os.getenv('HOME') .. '/.cage/clipboard/.current', 'r')
+    if f then
+      local text = f:read('*a'):gsub('\n$', '')
+      f:close()
+      pane:send_text(text)
+    end
+  end),
+},
+```
 
 ## Adding agents
 
