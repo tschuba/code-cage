@@ -1,8 +1,9 @@
 ## 1. Read Mounts
 
-- [ ] 1.1 Add `"$HOME/Downloads:ro" "$HOME/Documents:ro" "$HOME/Desktop:ro"` mount arguments to `sbx run` in the `cage` script
-- [ ] 1.2 Verify the cage cannot write to any of those dirs (test: `touch ~/Downloads/.cage-test` inside sandbox, expect permission error)
-- [ ] 1.3 Verify credential paths remain inaccessible (test: `cat ~/.aws/credentials` and `cat ~/.ssh/id_rsa` inside sandbox, expect file-not-found)
+- [ ] 1.1 Add `"$HOME/Downloads:ro" "$HOME/Documents:ro" "$HOME/Desktop:ro" "$TMPDIR:ro"` to `sbx run` in the `cage` script; remove `"$HOME/.cage/clipboard:ro"`
+- [ ] 1.2 Verify cage cannot write to any of those dirs (`touch ~/Downloads/.cage-test` inside sandbox → permission error)
+- [ ] 1.3 Verify credential paths inaccessible (`cat ~/.aws/credentials` inside sandbox → file-not-found)
+- [ ] 1.4 Verify `$TMPDIR/cage-clipboard.current` is readable inside the cage
 
 ## 2. Host App Launch Daemon
 
@@ -15,6 +16,14 @@
 - [ ] 3.1 Add install command to `claude-kit/spec.yaml` that writes `/usr/local/bin/code` inside the sandbox: writes a JSON request file to `~/.cage/open/<cage-name>-<timestamp>.json` and polls for deletion (up to 2s) to confirm launch
 - [ ] 3.2 Verify `code .` from inside a running cage opens VS Code on the host
 
-## 4. Spec Sync
+## 4. Clipboard Bridge Migration
 
-- [ ] 4.1 Run `openspec apply` to merge delta specs into `openspec/specs/`
+- [ ] 4.1 Update `cage-clipd`: change output paths to `$TMPDIR/cage-clipboard-<YYYYMMDD-HHMMSS>[-<name>].<ext>`; update `.current` write to `$TMPDIR/cage-clipboard.current`; remove `clean_outdir()` and `OUTDIR` setup
+- [ ] 4.2 Update WezTerm keybinding: read `$TMPDIR/cage-clipboard.current` instead of `~/.cage/clipboard/.current`
+- [ ] 4.3 Verify: screenshot → `$TMPDIR/cage-clipboard-<timestamp>.png` exists and `.current` points to it
+- [ ] 4.4 Verify: Finder file copy → `$TMPDIR/cage-clipboard-<timestamp>-<name>` and `.current` updated
+- [ ] 4.5 Verify: second clipboard event leaves prior file in place (no cleanup)
+
+## 5. Spec Sync
+
+- [ ] 5.1 Run `openspec apply` to merge delta specs into `openspec/specs/`

@@ -21,11 +21,13 @@ The clipboard bridge (`cage-clipd`) already proves the pattern for host↔cage d
 
 ## Decisions
 
-### 1. Read mounts: named home subdirs in `cage` script, not a config file
+### 1. Read mounts: named home subdirs + `$TMPDIR` in `cage` script
 
-Mount `~/Downloads`, `~/Documents`, and `~/Desktop` as read-only in the `cage` script. This is the practical equivalent of "home directory ro minus credential dirs" — sbx has no exclusion-mount primitive, so the safe approach is to mount specific named subdirectories and leave credential paths (`~/.aws`, `~/.ssh`, `~/.gnupg`, `~/.netrc`) out entirely.
+Mount `~/Downloads`, `~/Documents`, `~/Desktop`, and `$TMPDIR` as read-only in the `cage` script. sbx has no exclusion-mount primitive, so "home dir ro minus credentials" is implemented as a whitelist of named subdirs; credential paths are excluded by not being listed.
 
-A config file for user-customisable mounts was considered but rejected — YAGNI until the default set demonstrably falls short. Additional paths can be appended as `:ro` args to `sbx run` in the `cage` script.
+`$TMPDIR` is included because: (a) cage-clipd now writes clipboard output there, and (b) pi's native clipboard path (`$TMPDIR/pi-clipboard-*.png`) becomes accessible without any additional mechanism.
+
+A config file for user-customisable mounts was considered but rejected — YAGNI. Additional paths can be appended as `:ro` args to `sbx run`.
 
 ### 2. Host app launch: `cage-opend` daemon + shared socket directory
 
@@ -44,11 +46,28 @@ Follow the `cage-clipd` pattern exactly:
 
 Add a `code` shell script to the kit's install commands, placed at `/usr/local/bin/code` inside the sandbox. It writes the request file and waits up to 2s for the daemon to consume it (signals success). This is transparent to Claude — `code .` works as expected.
 
+### 4. Clipboard output: `$TMPDIR` with readable timestamped filenames
+
+cage-clipd currently writes to `~/.cage/clipboard/latest.*` and calls `clean_outdir()` to remove stale files before each write. Problems: single `latest.*` filename loses history, requires explicit cleanup, and uses a cage-specific path that no other tool understands.
+
+New approach: write to `$TMPDIR/cage-clipboard-<YYYYMMDD-HHMMSS>-<name>.<ext>`:
+- Screenshot → `cage-clipboard-20260729-153045.png`
+- PDF from clipboard → `cage-clipboard-20260729-153045.pdf`
+- Finder file `report.pdf` → `cage-clipboard-20260729-153045-report.pdf`
+- Multiple Finder files → one prefixed entry per file
+
+`.current` pointer moves to `$TMPDIR/cage-clipboard.current` (same content: one path per line). WezTerm keybinding reads this file unchanged.
+
+`clean_outdir()` is removed — macOS purges `$TMPDIR` on reboot and for inactive files. Multiple clipboard events coexist (distinguishable by name and timestamp), making it easy to verify which content will be referenced.
+
+`~/.cage/clipboard/` dir and its mount are dropped entirely.
+
 ## Risks / Trade-offs
 
 - **cage-opend not running**: `code` wrapper will timeout silently. Mitigation: `cage` script starts `cage-opend` alongside `cage-clipd` at launch.
-- **Read-only mounts of ~/Downloads expose sensitive files**: user controls the mount list; Downloads is the default because it's the standard landing zone for intentionally shared files. Mitigation: document that credential files in Downloads are not protected by this mechanism.
+- **$TMPDIR mount exposes all host temp files**: ephemeral by design, user-owned, no persistent secrets expected there. Acceptable for this threat model.
 - **Request file races (two cage sessions)**: both write to the same `~/.cage/open/` dir. Mitigation: request filenames include the cage name (`<cage-name>-<timestamp>.json`), so they don't collide; daemon processes all files it finds.
+- **$TMPDIR accumulates cage-clipboard-* files over a long session**: no manual cleanup, but files are small and macOS evicts them. Acceptable.
 
 ## Migration Plan
 
