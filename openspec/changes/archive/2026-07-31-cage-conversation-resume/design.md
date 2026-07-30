@@ -19,24 +19,25 @@ See proposal.md — Why. Claude Code stores conversation history under `~/.claud
 
 Making `~/.claude/` writable inside the cage would let the agent modify host Claude config (settings, credentials, installed plugins). A dedicated `~/.cage/claude-projects/` directory scopes the rw surface to conversation history only.
 
-**Symlink in install command over a direct mount path**
+**Copy-in / background-sync over symlink**
 
-Claude Code resolves `~/.claude/projects/` relative to the agent home (`/home/agent/.claude/projects/`). A symlink placed during kit install redirects writes to the mounted host path transparently, without changing any Claude Code configuration.
+sbx pre-creates or bind-mounts `/home/agent/.claude/projects/` as a directory that cannot be replaced by a symlink — `ln -sfn TARGET /home/agent/.claude/projects` falls back to creating a symlink named `claude-projects` inside the directory instead of at it.
 
-**Mount path derivation inside install command**
-
-The install command already locates the host's `~/.claude` via `ls -d /Users/*/.claude`. The claude-projects dir is one level up:
+The install command therefore uses a copy approach:
+- On startup: `cp -ru $CAGE_PROJECTS/. /home/agent/.claude/projects/` seeds the session with prior history
+- Background loop: `while true; do sleep 10; cp -ru /home/agent/.claude/projects/. $CAGE_PROJECTS/; done &` syncs new writes back to the host continuously
 
 ```sh
 SRC=$(ls -d /Users/*/.claude 2>/dev/null | head -1)
 CAGE_PROJECTS="$(dirname "$SRC")/.cage/claude-projects"
-mkdir -p "$CAGE_PROJECTS"
-ln -sfn "$CAGE_PROJECTS" /home/agent/.claude/projects
+mkdir -p "$CAGE_PROJECTS" /home/agent/.claude/projects
+cp -ru "$CAGE_PROJECTS/." /home/agent/.claude/projects/ 2>/dev/null || true
+(while true; do sleep 10; cp -ru /home/agent/.claude/projects/. "$CAGE_PROJECTS/" 2>/dev/null || true; done) &
 ```
 
 **`cage` script creates the dir before mounting**
 
-`sbx run` requires mount sources to exist. Add `mkdir -p "$HOME/.cage/claude-projects"` before the `sbx run` line (alongside the existing `mkdir -p "$HOME/.cage/open"`).
+`sbx run` requires mount sources to exist. `mkdir -p "$HOME/.cage/claude-projects"` runs before `sbx run`.
 
 ## Risks / Trade-offs
 
