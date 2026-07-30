@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# cage-opend — watch ~/.cage/open/ for VS Code launch requests from cage sessions
+# cage-opend — watch ~/.cage/open/ for host open requests from cage sessions
 import json
 import os
 import subprocess
@@ -7,10 +7,6 @@ import time
 
 OPEN_DIR = os.path.expanduser("~/.cage/open")
 os.makedirs(OPEN_DIR, exist_ok=True)
-
-LAUNCHERS = {
-    "open-vscode": ["open", "-a", "Visual Studio Code"],
-}
 
 
 def handle_request(path):
@@ -23,12 +19,13 @@ def handle_request(path):
         except OSError:
             pass
         return
-    req_type = req.get("type", "")
-    req_path = req.get("path", "")
-    cmd = LAUNCHERS.get(req_type)
-    if cmd and req_path:
+    args = req.get("args")
+    # ponytail: compat for old {"type":"open-vscode","path":"..."} format
+    if not args and req.get("type") == "open-vscode" and req.get("path"):
+        args = ["-a", "Visual Studio Code", req["path"]]
+    if args and isinstance(args, list):
         try:
-            subprocess.Popen(cmd + [req_path])
+            subprocess.Popen(["/usr/bin/open"] + args)
         except OSError:
             pass
     try:
