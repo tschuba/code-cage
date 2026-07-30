@@ -2,7 +2,39 @@
 set -e
 SCRIPT="$(readlink "$0" || echo "$0")"
 CAGE_DIR="$(cd "$(dirname "$SCRIPT")" && pwd)"
-AGENT="${1:-claude}"
+case "$1" in
+    -h|--help)
+        [ -f "$HOME/.cage/config" ] && . "$HOME/.cage/config"
+        _harnesses=$(ls -d "$CAGE_DIR"/*-kit 2>/dev/null | xargs -I{} basename {} -kit | tr '\n' ' ')
+        cat <<USAGE
+Usage: cage [<harness>] [-- <agent-args>...]
+       cage use <harness>
+
+Run an agent in a sandbox (default harness: ${default_harness:-claude}).
+
+Available harnesses: ${_harnesses% }
+
+Commands:
+  use <harness>   Set the default harness (persisted to ~/.cage/config)
+
+Arguments passed after "--" are forwarded to the agent.
+USAGE
+        exit 0 ;;
+esac
+if [ "$1" = "use" ]; then
+    case "$2" in
+        ''|-*) echo "usage: cage use <harness>" >&2; exit 1 ;;
+    esac
+    mkdir -p "$HOME/.cage"
+    echo "default_harness=$2" > "$HOME/.cage/config"
+    echo "Default harness set to: $2"
+    exit 0
+fi
+if [ -z "$1" ] && [ -f "$HOME/.cage/config" ]; then
+    # ponytail: sources user-owned file, same threat model as .zshrc
+    . "$HOME/.cage/config"
+fi
+AGENT="${1:-${default_harness:-claude}}"
 shift 2>/dev/null || true
 KIT="$CAGE_DIR/${AGENT}-kit"
 KIT_KIND="$(grep '^kind:' "$KIT/spec.yaml" 2>/dev/null | awk '{print $2}')"
