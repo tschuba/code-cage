@@ -20,9 +20,9 @@
 
 - [x] 4.1 Update `cage-clipd`: change output paths to `$TMPDIR/cage-clipboard-<YYYYMMDD-HHMMSS>[-<name>].<ext>`; update `.current` write to `$TMPDIR/cage-clipboard.current`; remove `clean_outdir()` and `OUTDIR` setup
 - [x] 4.2 Update WezTerm keybinding: read `$TMPDIR/cage-clipboard.current` instead of `~/.cage/clipboard/.current`
-- [ ] 4.3 Verify: screenshot → `$TMPDIR/cage-clipboard-<timestamp>.png` exists and `.current` points to it
-- [ ] 4.4 Verify: Finder file copy → `$TMPDIR/cage-clipboard-<timestamp>-<name>` and `.current` updated
-- [ ] 4.5 Verify: second clipboard event leaves prior file in place (no cleanup)
+- [x] 4.3 Verify: screenshot → `$TMPDIR/cage-clipboard-<timestamp>.png` exists and `.current` points to it
+- [x] 4.4 Verify: Finder file copy → `$TMPDIR/cage-clipboard-<timestamp>-<name>` and `.current` updated
+- [x] 4.5 Verify: second clipboard event leaves prior file in place (no cleanup)
 
 ## 5. Spec Sync
 

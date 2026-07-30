@@ -10,7 +10,7 @@ NAME="${AGENT}-$(basename "$(pwd)" | tr -cs 'a-zA-Z0-9.' '-' | sed 's/-$//')"
 
 # Start clipboard daemon if not already running
 if ! pgrep -qf cage-clipd 2>/dev/null; then
-    "$CAGE_DIR/cage-clipd" >/dev/null 2>&1 &
+    "$HOME/.cage/venv/bin/python3" "$CAGE_DIR/cage-clipd" >/dev/null 2>&1 &
 fi
 
 # Start host app launch daemon if not already running

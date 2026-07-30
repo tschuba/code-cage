@@ -7,42 +7,110 @@ if ! python3 -c '' 2>/dev/null; then
     exit 1
 fi
 
+VENV="$HOME/.cage/venv"
+if [ ! -d "$VENV" ]; then
+    echo "Creating Python venv at $VENV..."
+    python3 -m venv "$VENV"
+fi
+if ! "$VENV/bin/python3" -c 'import AppKit' 2>/dev/null; then
+    echo "Installing pyobjc-framework-Cocoa into $VENV..."
+    "$VENV/bin/pip" install --quiet pyobjc-framework-Cocoa
+fi
+
 # Store GitHub token in sbx secret store so agents can push, create PRs, etc.
 if gh auth token >/dev/null 2>&1; then
     echo "Importing GitHub token into sbx secrets..."
-    gh auth token | sbx secret set -g github 2>/dev/null || \
+    sbx secret set -g github -t "$(gh auth token)" -f 2>/dev/null || \
         echo "  (skipped: sbx not yet authenticated — run 'sbx login' first)"
 else
     echo "Note: 'gh' not authenticated — run 'gh auth login' then 'sbx secret import github' to enable git/GitHub in cage sessions"
 fi
 
 for bin in cage cage-clipd cage-opend; do
-    ln -sf "$CAGE_DIR/$bin" "/usr/local/bin/$bin"
+    sudo ln -sf "$CAGE_DIR/$bin" "/usr/local/bin/$bin"
     echo "Linked $bin"
 done
 
-# WezTerm reminder
-if ! grep -q 'cage-clipboard' "$HOME/.wezterm.lua" 2>/dev/null; then
-    cat <<'MSG'
+# Install cage-clipd as a launchd agent (starts at login, restarts on crash)
+PLIST_DIR="$HOME/Library/LaunchAgents"
+PLIST="$PLIST_DIR/com.cage.clipd.plist"
+mkdir -p "$HOME/.cage/logs" "$PLIST_DIR"
+cat > "$PLIST" <<PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.cage.clipd</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>$HOME/.cage/venv/bin/python3</string>
+        <string>/usr/local/bin/cage-clipd</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>$HOME/.cage/logs/cage-clipd.log</string>
+    <key>StandardErrorPath</key>
+    <string>$HOME/.cage/logs/cage-clipd.log</string>
+</dict>
+</plist>
+PLIST
+launchctl unload "$PLIST" 2>/dev/null || true
+launchctl load "$PLIST"
+echo "cage-clipd installed as launchd agent"
 
-WezTerm config not yet updated. Add this to the config.keys table in ~/.wezterm.lua:
+# Add cage-clipboard keybinding to ~/.wezterm.lua
+WEZTERM_LUA="$HOME/.wezterm.lua"
+if ! grep -q 'cage-clipboard' "$WEZTERM_LUA" 2>/dev/null; then
+    "$VENV/bin/python3" - "$WEZTERM_LUA" <<'PYEOF'
+import os, sys, tempfile
 
-  {
-    key = 'v',
-    mods = 'CTRL|SHIFT',
-    action = wezterm.action_callback(function(window, pane)
-      local f = io.open(os.getenv('TMPDIR') .. '/cage-clipboard.current', 'r')
-      if f then
-        local text = f:read('*a'):gsub('\n$', '')
-        f:close()
-        pane:send_text(text)
-      end
-    end),
-  },
+path = sys.argv[1]
+binding = r"""
+-- cage-clipboard: Ctrl+Shift+V inserts clipboard path(s) into prompt
+config.keys = config.keys or {}
+table.insert(config.keys, {
+  key = 'v',
+  mods = 'CTRL|SHIFT',
+  action = wezterm.action_callback(function(window, pane)
+    local f = io.open(os.getenv('TMPDIR') .. '/cage-clipboard.current', 'r')
+    if f then
+      local text = f:read('*a'):gsub('\n$', '')
+      f:close()
+      pane:send_text(text)
+    end
+  end),
+})
+"""
 
-Ctrl+Shift+V then inserts the clipboard path(s) from $TMPDIR/cage-clipboard.current into the prompt.
+try:
+    with open(path) as f:
+        content = f.read()
+except FileNotFoundError:
+    content = "local wezterm = require 'wezterm'\nlocal config = wezterm.config_builder()\n\nreturn config\n"
 
-MSG
+idx = content.rfind('\nreturn ')
+if idx == -1:
+    content = content.rstrip('\n') + '\n' + binding + '\n'
+else:
+    content = content[:idx] + '\n' + binding + content[idx:]
+
+# Atomic write: write to temp file in same dir, then rename over original
+dirpath = os.path.dirname(os.path.abspath(path))
+fd, tmp = tempfile.mkstemp(dir=dirpath)
+try:
+    with os.fdopen(fd, 'w') as f:
+        f.write(content)
+    os.replace(tmp, path)
+except:
+    os.unlink(tmp)
+    raise
+
+print(f"Updated {path} with cage-clipboard keybinding")
+PYEOF
 else
     echo "WezTerm config already contains cage-clipboard binding"
 fi

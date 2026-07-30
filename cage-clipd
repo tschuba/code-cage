@@ -13,7 +13,7 @@ try:
     except ImportError:
         PNG_TYPE = 4  # ponytail: legacy alias; value is stable across macOS versions
 except ImportError:
-    print("cage-clipd: PyObjC not available — run with macOS system Python", file=sys.stderr)
+    print("cage-clipd: PyObjC not available — run: pip3 install pyobjc-framework-Cocoa", file=sys.stderr)
     sys.exit(1)
 
 TMPDIR = os.environ.get("TMPDIR", "/tmp")
