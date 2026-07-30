@@ -6,7 +6,7 @@ AGENT="${1:-claude}"
 shift 2>/dev/null || true
 KIT="$CAGE_DIR/${AGENT}-kit"
 KIT_KIND="$(grep '^kind:' "$KIT/spec.yaml" 2>/dev/null | awk '{print $2}')"
-NAME="${AGENT}-$(basename "$(pwd)" | tr -cs 'a-zA-Z0-9.' '-' | sed 's/-$//')"
+NAME="${AGENT}-$(basename "$(pwd)" | tr -cs 'a-zA-Z0-9.' '-' | sed 's/-$//')-$$"
 
 # Start clipboard daemon if not already running
 if ! pgrep -qf cage-clipd 2>/dev/null; then
@@ -24,7 +24,6 @@ mkdir -p "$HOME/.cage/host-tmpdir"
 echo "$TMPDIR" > "$HOME/.cage/host-tmpdir/path"
 mkdir -p "$HOME/.cage/tmpdir"
 
-sbx rm -f "$NAME" 2>/dev/null || true
 printf '\033]0;⬡ cage:%s\007' "$AGENT"
 wezterm cli set-tab-title "⬡ cage:$AGENT" 2>/dev/null || true
 if [ "$KIT_KIND" = "agent" ]; then
