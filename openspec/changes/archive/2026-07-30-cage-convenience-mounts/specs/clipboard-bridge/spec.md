@@ -1,4 +1,4 @@
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Clipboard daemon syncs PDF bytes to sandbox
 When the macOS clipboard holds a PDF (UTI `com.adobe.pdf`), `cage-clipd` SHALL write the raw PDF bytes to `$TMPDIR/cage-clipboard-<YYYYMMDD-HHMMSS>.pdf` and update `$TMPDIR/cage-clipboard.current` to that path.
@@ -54,3 +54,9 @@ The `Ctrl+Shift+V` WezTerm keybinding SHALL insert the contents of `$TMPDIR/cage
 #### Scenario: Multiple paths inserted for multi-file paste
 - **WHEN** `.current` contains multiple paths and the user presses `Ctrl+Shift+V`
 - **THEN** all paths are inserted, one per line, at the cursor position
+
+## REMOVED Requirements
+
+### Requirement: Clipboard output written to `~/.cage/clipboard/`
+**Reason**: Replaced by `$TMPDIR`-based output. The `~/.cage/clipboard/` directory and its `~/.cage/clipboard:ro` sandbox mount are no longer needed.
+**Migration**: Update `cage` script to replace `"$HOME/.cage/clipboard:ro"` with `"$TMPDIR:ro"`. Remove `clean_outdir()` from `cage-clipd`. The `~/.cage/clipboard/` directory can be left in place or removed manually.

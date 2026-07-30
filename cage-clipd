@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-# cage-clipd — sync clipboard content (images, PDFs, Finder files) to ~/.cage/clipboard/
+# cage-clipd — sync clipboard content (images, PDFs, Finder files) to $TMPDIR
+import datetime
 import os
-import sys
-import glob
 import shutil
+import sys
 import time
 
 try:
@@ -13,27 +13,19 @@ try:
     except ImportError:
         PNG_TYPE = 4  # ponytail: legacy alias; value is stable across macOS versions
 except ImportError:
-    print("cage-clipd: PyObjC not available — run with macOS system Python", file=sys.stderr)
+    print("cage-clipd: PyObjC not available — run: pip3 install pyobjc-framework-Cocoa", file=sys.stderr)
     sys.exit(1)
 
-OUTDIR = os.path.expanduser("~/.cage/clipboard")
-os.makedirs(OUTDIR, exist_ok=True)
+TMPDIR = os.environ.get("TMPDIR", "/tmp")
+CURRENT = os.path.join(TMPDIR, "cage-clipboard.current")
 
 
-def clean_outdir():
-    for f in glob.glob(os.path.join(OUTDIR, "latest.*")):
-        os.remove(f)
-    for entry in os.scandir(OUTDIR):
-        if entry.name.startswith("."):
-            continue
-        if entry.is_dir(follow_symlinks=False):
-            shutil.rmtree(entry.path)
-        else:
-            os.remove(entry.path)
+def ts():
+    return datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 
 
 def write_current(paths):
-    with open(os.path.join(OUTDIR, ".current"), "w") as f:
+    with open(CURRENT, "w") as f:
         f.write("\n".join(paths) + "\n")
 
 
@@ -41,8 +33,7 @@ def handle_pdf(pb):
     data = pb.dataForType_("com.adobe.pdf")
     if not data:
         return False
-    out = os.path.join(OUTDIR, "latest.pdf")
-    clean_outdir()
+    out = os.path.join(TMPDIR, f"cage-clipboard-{ts()}.pdf")
     with open(out, "wb") as f:
         f.write(bytes(data))
     write_current([out])
@@ -53,8 +44,8 @@ def handle_files(pb):
     files = pb.propertyListForType_("NSFilenamesPboardType")
     if not files:
         return False
-    clean_outdir()
     paths = list(files)
+    stamp = ts()
 
     # Folder consolidation: N files are the sole contents of their parent dir
     if len(paths) > 1:
@@ -64,7 +55,7 @@ def handle_files(pb):
             try:
                 basenames = {os.path.basename(p) for p in paths}
                 if set(os.listdir(parent)) == basenames:
-                    dest_dir = os.path.join(OUTDIR, os.path.basename(parent))
+                    dest_dir = os.path.join(TMPDIR, f"cage-clipboard-{stamp}-{os.path.basename(parent)}")
                     os.makedirs(dest_dir, exist_ok=True)
                     for p in paths:
                         shutil.copy2(p, os.path.join(dest_dir, os.path.basename(p)))
@@ -75,7 +66,7 @@ def handle_files(pb):
 
     dest_paths = []
     for p in paths:
-        dest = os.path.join(OUTDIR, os.path.basename(p))
+        dest = os.path.join(TMPDIR, f"cage-clipboard-{stamp}-{os.path.basename(p)}")
         if os.path.isdir(p):
             shutil.copytree(p, dest, dirs_exist_ok=True)
         else:
@@ -95,8 +86,7 @@ def handle_image(pb):
     png_data = rep.representationUsingType_properties_(PNG_TYPE, None)
     if not png_data:
         return False
-    out = os.path.join(OUTDIR, "latest.png")
-    clean_outdir()
+    out = os.path.join(TMPDIR, f"cage-clipboard-{ts()}.png")
     png_data.writeToFile_atomically_(out, True)
     write_current([out])
     return True
