@@ -1,55 +1,51 @@
 ## Requirements
 
 ### Requirement: Clipboard daemon syncs PDF bytes to sandbox
-When the macOS clipboard holds a PDF (UTI `com.adobe.pdf`), `cage-clipd` SHALL write the raw PDF bytes to `~/.cage/clipboard/latest.pdf` and set `.current` to that path.
+When the macOS clipboard holds a PDF (UTI `com.adobe.pdf`), `cage-clipd` SHALL write the raw PDF bytes to `$TMPDIR/cage-clipboard-<YYYYMMDD-HHMMSS>.pdf` and update `$TMPDIR/cage-clipboard.current` to that path.
 
 #### Scenario: PDF copied from Preview
 - **WHEN** the user copies a page or selection in Preview (clipboard gains `com.adobe.pdf` type)
-- **THEN** `~/.cage/clipboard/latest.pdf` is written with the PDF bytes
-- **THEN** `~/.cage/clipboard/.current` contains the single line `~/.cage/clipboard/latest.pdf`
+- **THEN** a file matching `$TMPDIR/cage-clipboard-<timestamp>.pdf` is written with the PDF bytes
+- **THEN** `$TMPDIR/cage-clipboard.current` contains the single line pointing to that file
 
 #### Scenario: PDF from browser
 - **WHEN** the user copies PDF content from a browser (clipboard gains `com.adobe.pdf` type)
-- **THEN** `~/.cage/clipboard/latest.pdf` is written with the PDF bytes
-- **THEN** `~/.cage/clipboard/.current` contains the single line `~/.cage/clipboard/latest.pdf`
+- **THEN** a timestamped PDF file is written to `$TMPDIR`
+- **THEN** `$TMPDIR/cage-clipboard.current` is updated to point to it
 
-#### Scenario: Non-PDF clipboard event clears stale PDF
+#### Scenario: Non-PDF clipboard event does not remove prior PDF
 - **WHEN** the clipboard changes to a non-PDF, non-image type after a PDF was synced
-- **THEN** `~/.cage/clipboard/latest.pdf` is removed
+- **THEN** the prior PDF file in `$TMPDIR` is left in place (OS handles cleanup); only `.current` is updated or cleared
 
 ### Requirement: Clipboard daemon copies Finder files to sandbox
-When the macOS clipboard holds file URLs (UTI `NSFilenamesPboardType`), `cage-clipd` SHALL copy each file to `~/.cage/clipboard/` and write the resulting path(s) to `.current`, one path per line.
+When the macOS clipboard holds file URLs (UTI `NSFilenamesPboardType`), `cage-clipd` SHALL copy each file to `$TMPDIR` with a `cage-clipboard-<timestamp>-<originalname>` prefix and write the resulting path(s) to `$TMPDIR/cage-clipboard.current`, one path per line.
 
 #### Scenario: Single file copied from Finder
 - **WHEN** the user copies one file in Finder (e.g. `~/Downloads/report.pdf`)
-- **THEN** the file is copied to `~/.cage/clipboard/report.pdf`
-- **THEN** `~/.cage/clipboard/.current` contains `~/.cage/clipboard/report.pdf`
+- **THEN** the file is copied to `$TMPDIR/cage-clipboard-<timestamp>-report.pdf`
+- **THEN** `$TMPDIR/cage-clipboard.current` contains that path
 
 #### Scenario: Multiple files from different locations
 - **WHEN** the user copies multiple files from different directories
-- **THEN** each file is copied flat into `~/.cage/clipboard/<basename>`
-- **THEN** `~/.cage/clipboard/.current` contains one path per line for each copied file
+- **THEN** each file is copied to `$TMPDIR/cage-clipboard-<timestamp>-<basename>`
+- **THEN** `$TMPDIR/cage-clipboard.current` contains one path per line for each copied file
 
 #### Scenario: Multiple files constituting their entire parent folder
 - **WHEN** the user copies N files from a directory and those N files are the only contents of that directory
-- **THEN** the files are copied into `~/.cage/clipboard/<foldername>/`
-- **THEN** `~/.cage/clipboard/.current` contains the single line `~/.cage/clipboard/<foldername>/`
+- **THEN** the files are copied into `$TMPDIR/cage-clipboard-<timestamp>-<foldername>/`
+- **THEN** `$TMPDIR/cage-clipboard.current` contains the single line pointing to that directory
 
 ### Requirement: Current pointer always reflects latest clipboard event
-`cage-clipd` SHALL write `~/.cage/clipboard/.current` on every clipboard event that produces output, and remove stale files from prior events before writing new ones.
+`cage-clipd` SHALL overwrite `$TMPDIR/cage-clipboard.current` on every clipboard event that produces output. Prior output files are NOT removed — the OS handles `$TMPDIR` cleanup automatically.
 
 #### Scenario: Image after PDF
 - **WHEN** the clipboard changes from a PDF to an image
-- **THEN** `latest.pdf` is removed
-- **THEN** `latest.png` is written
-- **THEN** `.current` is updated to `~/.cage/clipboard/latest.png`
-
-#### Scenario: New event clears old Finder files
-- **WHEN** a new clipboard event occurs after Finder files were synced
-- **THEN** previously copied files in `~/.cage/clipboard/` are removed before the new content is written
+- **THEN** a new `cage-clipboard-<timestamp>.png` is written to `$TMPDIR`
+- **THEN** `.current` is updated to point to the new image
+- **THEN** the prior PDF file remains in `$TMPDIR` (not deleted)
 
 ### Requirement: WezTerm paste macro inserts current clipboard path(s)
-The `Ctrl+Shift+V` WezTerm keybinding SHALL insert the contents of `~/.cage/clipboard/.current` at the cursor, which may be one or more paths separated by newlines.
+The `Ctrl+Shift+V` WezTerm keybinding SHALL insert the contents of `$TMPDIR/cage-clipboard.current` at the cursor, which may be one or more paths separated by newlines.
 
 #### Scenario: Single file path inserted
 - **WHEN** `.current` contains one path and the user presses `Ctrl+Shift+V`
