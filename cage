@@ -57,15 +57,17 @@ mkdir -p "$HOME/.cage/host-tmpdir"
 echo "$TMPDIR" > "$HOME/.cage/host-tmpdir/path"
 mkdir -p "$HOME/.cage/tmpdir"
 mkdir -p "$HOME/.cage/claude-projects"
+mkdir -p "$HOME/.cage/pi-sessions"
 
 printf '\033]0;⬡ cage:%s\007' "$AGENT"
 wezterm cli set-tab-title "⬡ cage:$AGENT" 2>/dev/null || true
 case "$AGENT" in
-  pi) _AGENT_MOUNTS="$HOME/.pi/agent:ro" ;;
+  pi) _AGENT_MOUNTS="$HOME/.pi/agent:ro"
+      set -- --session-dir "$HOME/.cage/pi-sessions" "$@" ;;
   *)  _AGENT_MOUNTS="" ;;
 esac
 if [ "$KIT_KIND" = "agent" ]; then
-  exec sbx run "$AGENT" --kit "$KIT" --name "$NAME" . "$HOME/.claude:ro" "$HOME/Downloads:ro" "$HOME/Documents:ro" "$HOME/Desktop:ro" "$TMPDIR:ro" "$HOME/.cage/host-tmpdir:ro" "$HOME/.cage/tmpdir" "$HOME/.cage/open" "$HOME/.cage/claude-projects" ${_AGENT_MOUNTS:+"$_AGENT_MOUNTS"} -- "$@"
+  exec sbx run "$AGENT" --kit "$KIT" --name "$NAME" . "$HOME/.claude:ro" "$HOME/Downloads:ro" "$HOME/Documents:ro" "$HOME/Desktop:ro" "$TMPDIR:ro" "$HOME/.cage/host-tmpdir:ro" "$HOME/.cage/tmpdir" "$HOME/.cage/open" "$HOME/.cage/claude-projects" "$HOME/.cage/pi-sessions" ${_AGENT_MOUNTS:+"$_AGENT_MOUNTS"} -- "$@"
 else
-  exec sbx run "$AGENT" --kit "$KIT" --name "$NAME" . "$HOME/.claude:ro" "$HOME/Downloads:ro" "$HOME/Documents:ro" "$HOME/Desktop:ro" "$TMPDIR:ro" "$HOME/.cage/host-tmpdir:ro" "$HOME/.cage/tmpdir" "$HOME/.cage/open" "$HOME/.cage/claude-projects" ${_AGENT_MOUNTS:+"$_AGENT_MOUNTS"} -- --dangerously-skip-permissions "$@"
+  exec sbx run "$AGENT" --kit "$KIT" --name "$NAME" . "$HOME/.claude:ro" "$HOME/Downloads:ro" "$HOME/Documents:ro" "$HOME/Desktop:ro" "$TMPDIR:ro" "$HOME/.cage/host-tmpdir:ro" "$HOME/.cage/tmpdir" "$HOME/.cage/open" "$HOME/.cage/claude-projects" "$HOME/.cage/pi-sessions" ${_AGENT_MOUNTS:+"$_AGENT_MOUNTS"} -- --dangerously-skip-permissions "$@"
 fi
