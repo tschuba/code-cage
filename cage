@@ -66,8 +66,12 @@ case "$AGENT" in
   pi) AGENT_MOUNTS="$HOME/.pi/agent:ro $HOME/.pi/skills:ro"  # ponytail: unquoted in exec so shell word-splits the two mounts; paths must not contain spaces
       set -- --session-dir "$HOME/.cage/pi-sessions" "$@" ;;
 esac
-if [ "$KIT_KIND" = "agent" ]; then
-  exec sbx run "$AGENT" --kit "$KIT" --name "$NAME" . "$HOME/.claude:ro" "$HOME/Downloads:ro" "$HOME/Documents:ro" "$HOME/Desktop:ro" "$TMPDIR:ro" "$HOME/.cage/host-tmpdir:ro" "$HOME/.cage/tmpdir" "$HOME/.cage/open" "$HOME/.cage/claude-projects" "$HOME/.cage/pi-sessions" $AGENT_MOUNTS -- "$@"
+SBX_MOUNTS=". $HOME/.claude:ro $HOME/Downloads:ro $HOME/Documents:ro $HOME/Desktop:ro $TMPDIR:ro $HOME/.cage/host-tmpdir:ro $HOME/.cage/tmpdir $HOME/.cage/open $HOME/.cage/claude-projects $HOME/.cage/pi-sessions"
+if [ "$AGENT" = "pi" ] && [ "$KIT_KIND" = "agent" ]; then
+  cp "$HOME/.pi/agent/auth.json" "$HOME/.cage/tmpdir/pi-auth.json"
+  sbx run "$AGENT" --kit "$KIT" --name "$NAME" $SBX_MOUNTS $AGENT_MOUNTS -- "$@"  # ponytail: no exec so we can write auth back after session
+  [ "$HOME/.cage/tmpdir/pi-auth.json" -nt "$HOME/.pi/agent/auth.json" ] && cp "$HOME/.cage/tmpdir/pi-auth.json" "$HOME/.pi/agent/auth.json"
 else
-  exec sbx run "$AGENT" --kit "$KIT" --name "$NAME" . "$HOME/.claude:ro" "$HOME/Downloads:ro" "$HOME/Documents:ro" "$HOME/Desktop:ro" "$TMPDIR:ro" "$HOME/.cage/host-tmpdir:ro" "$HOME/.cage/tmpdir" "$HOME/.cage/open" "$HOME/.cage/claude-projects" "$HOME/.cage/pi-sessions" $AGENT_MOUNTS -- --dangerously-skip-permissions "$@"
+  [ "$KIT_KIND" != "agent" ] && set -- --dangerously-skip-permissions "$@"
+  exec sbx run "$AGENT" --kit "$KIT" --name "$NAME" $SBX_MOUNTS $AGENT_MOUNTS -- "$@"
 fi
